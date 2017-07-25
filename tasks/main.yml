@@ -1,0 +1,63 @@
+---
+
+- name: Install dependencies Ubuntu
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "g++"
+    - "zip"
+    - "bzip2"
+    - "build-essential"
+    - "libncurses5-dev"
+    - "zlib1g-dev"
+    - "libbz2-dev"
+    - "liblzma-dev"
+    - "libcurl-ocaml-dev"
+  when: ansible_distribution == "Ubuntu"
+
+- name: Install dependencies CentOS
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "zip"
+    - "zlib-devel"
+    - "bzip2"
+    - "bzip2-devel"
+    - "xz-devel"
+    - "ncurses-devel"
+  when: ansible_distribution == "CentOS"
+
+- name: Download zip
+  get_url:
+    url: "https://github.com/samtools/samtools/releases/download/{{ VERSION }}/samtools-{{ VERSION }}.tar.bz2"
+    dest: "/tmp/samtools.tar.bz2"
+
+- name: Unzip the package
+  unarchive:
+    src: "/tmp/samtools.tar.bz2"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: Configure samtools
+  command: "./configure --prefix=/usr/local"
+  args:
+    chdir: "/tmp/samtools-{{ VERSION }}"
+
+- name: Build executables from source
+  make:
+    chdir: "/tmp/samtools-{{ VERSION }}"
+
+- name: Install executables
+  make:
+    chdir: "/tmp/samtools-{{ VERSION }}"
+    target: install
+
+- name: Remove temporary files
+  file:
+    state: absent
+    path: "{{ item }}"
+  with_items:
+    - "/tmp/samtools.tar.bz2"
+    - "/tmp/samtools-{{ VERSION }}"
